@@ -61,7 +61,7 @@ index 4feb9686f45ce4ae9f474447496b8e0f6fcb7e31..c39c9929a251b41ab60e1509b4e6c90d
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 013c44f80f74376e8bbb37afb5de07aa5d8fb1bc..e16ba05cf64b2c8ae3e38e89c9d869ecb5d23552 100644
+index 2b76b5a70280def08f239ff387407a9d328d484c..f14ed2f1d8af1150baf1402615447ae84677c031 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -197,6 +197,9 @@ public abstract class Entity implements INamableTileEntity, ICommandListener, Ke
@@ -97,7 +97,7 @@ index 41382fd40869a8f40f3f65f12cb81a86590a9995..7bd22c81d75368697113915a97c7fbe5
              ++this.conversionTicks;
              if (this.conversionTicks > 300) {
 diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
-index 8a5e2806e68e5f4431fd9563fae780861e87632f..6cace7b4b27585a83e1474b664c7ed282ee0697d 100644
+index a47217c020d2c2a3caddafa0549dc827373798dd..81a91d63dd26a940c381b5a4f18eb60d42bbd61e 100644
 --- a/src/main/java/net/minecraft/server/EntityInsentient.java
 +++ b/src/main/java/net/minecraft/server/EntityInsentient.java
 @@ -133,10 +133,10 @@ public abstract class EntityInsentient extends EntityLiving {

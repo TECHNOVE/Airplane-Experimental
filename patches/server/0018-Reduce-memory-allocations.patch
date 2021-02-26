@@ -5,7 +5,7 @@ Subject: [PATCH] Reduce memory allocations
 
 
 diff --git a/src/main/java/net/minecraft/server/BlockDirtSnowSpreadable.java b/src/main/java/net/minecraft/server/BlockDirtSnowSpreadable.java
-index 7b29d47dfdef7611db58068af285f76d92a9f12a..7009586430649a87722f6c73cd5a311d7c977196 100644
+index 7b29d47dfdef7611db58068af285f76d92a9f12a..6c5d96853d47850b81ce85e56a516c554819ef25 100644
 --- a/src/main/java/net/minecraft/server/BlockDirtSnowSpreadable.java
 +++ b/src/main/java/net/minecraft/server/BlockDirtSnowSpreadable.java
 @@ -43,8 +43,14 @@ public abstract class BlockDirtSnowSpreadable extends BlockDirtSnow {
@@ -15,7 +15,7 @@ index 7b29d47dfdef7611db58068af285f76d92a9f12a..7009586430649a87722f6c73cd5a311d
 +                // Airplane start - use mutable position
 +                BlockPosition.MutableBlockPosition blockposition1 = new BlockPosition.MutableBlockPosition();
                  for (int i = 0; i < 4; ++i) {
-+                    blockposition1.setValues(blockposition).add(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
++                    blockposition1.setValues(blockposition).addValues(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
 +                    /*
                      BlockPosition blockposition1 = blockposition.b(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
 +                     */
@@ -23,6 +23,25 @@ index 7b29d47dfdef7611db58068af285f76d92a9f12a..7009586430649a87722f6c73cd5a311d
  
                      if (worldserver.getType(blockposition1).a(Blocks.DIRT) && c(iblockdata1, (IWorldReader) worldserver, blockposition1)) {
                          org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(worldserver, blockposition, blockposition1, (IBlockData) iblockdata1.set(BlockDirtSnowSpreadable.a, worldserver.getType(blockposition1.up()).a(Blocks.SNOW))); // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
+index 2291135eaef64c403183724cb6e413cd7e472672..72ee5fe0ca25844cbcd8f1bbbbd6a7f8ced24bc4 100644
+--- a/src/main/java/net/minecraft/server/BlockPosition.java
++++ b/src/main/java/net/minecraft/server/BlockPosition.java
+@@ -432,6 +432,14 @@ public class BlockPosition extends BaseBlockPosition {
+         public BlockPosition b(int i, int j, int k) {
+             return super.b(i, j, k).immutableCopy();
+         }
++        // Airplane start - version of b that doesn't copy
++        public BlockPosition addValues(int x, int y, int z) {
++            ((BaseBlockPosition)this).a += x;
++            ((BaseBlockPosition)this).b += y;
++            ((BaseBlockPosition)this).e += z;
++            return this;
++        }
++        // Airplane end
+ 
+         @Override
+         public BlockPosition shift(EnumDirection enumdirection, int i) {
 diff --git a/src/main/java/net/minecraft/server/EntityTypes.java b/src/main/java/net/minecraft/server/EntityTypes.java
 index bf914dc5ee7f2d4a324b6711ea273f5581ec84ad..1d23d6ede74bfa142e75ffcd84d75cde47270510 100644
 --- a/src/main/java/net/minecraft/server/EntityTypes.java
@@ -37,10 +56,10 @@ index bf914dc5ee7f2d4a324b6711ea273f5581ec84ad..1d23d6ede74bfa142e75ffcd84d75cde
          return (EntityTypes) IRegistry.a((IRegistry) IRegistry.ENTITY_TYPE, s, (Object) entitytypes_builder.a(s));
      }
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0dbc3804b0c 100644
+index 61570ab947b5a153a4c2bcb5a09344f060e6052d..121deda90227cb0416d6642607b24093df2baa80 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -638,7 +638,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -641,7 +641,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          return d2 * d2 + d3 * d3;
      }
  
@@ -51,7 +70,7 @@ index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0db
          int i;
          int j;
  
-@@ -652,12 +654,16 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -655,12 +657,16 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
              j = MathHelper.floor(entityplayer.locZ() / 16.0D);
          }
  
@@ -72,7 +91,7 @@ index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0db
  
          return Math.max(Math.abs(k), Math.abs(l));
      }
-@@ -2498,11 +2504,17 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2499,11 +2505,17 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
                      boolean flag1 = this.tracker.attachedToPlayer;
  
                      if (!flag1) {
@@ -92,7 +111,7 @@ index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0db
                          }
                      }
  
-@@ -2532,8 +2544,10 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2533,8 +2545,10 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
          }
  
          private int b() {
@@ -104,7 +123,7 @@ index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0db
              Iterator iterator = collection.iterator();
  
              while (iterator.hasNext()) {
-@@ -2545,6 +2559,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2546,6 +2560,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
                      i = j;
                  }
              }
@@ -114,10 +133,10 @@ index a42571cfd2c9c80df27e59db832cb64c2a64e141..c5546838187e3dc0d752e69c1eafa0db
              return this.a(i);
          }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 9dc574326e22669cb69f856a64bfc12cc95ef511..248e3d922dca081da53695013f0fa88e09a5f8a3 100644
+index 50cb45883a2e815bdbf5c1522a8ddbcb124561b3..3c968c6133c42c3690fe554d5993d237de82c162 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -1010,19 +1010,19 @@ public abstract class World implements GeneratorAccess, AutoCloseable {
+@@ -1041,19 +1041,19 @@ public abstract class World implements GeneratorAccess, AutoCloseable {
  
      public void a(Consumer<Entity> consumer, Entity entity) {
          try {
@@ -141,10 +160,10 @@ index 9dc574326e22669cb69f856a64bfc12cc95ef511..248e3d922dca081da53695013f0fa88e
      // Paper start - Prevent armor stands from doing entity lookups
      @Override
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 509e60279be76374e2f32faecb881b05f3f23b43..a6c7ed128479bbbd8aed35b3f730d13dd24dbc34 100644
+index c0b6bd8f01214346c17d819d5d870689900d7719..bccc599d2ba76d2b92e57a8d29e661dc974439a5 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -887,7 +887,28 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -992,7 +992,28 @@ public class WorldServer extends World implements GeneratorAccessSeed {
  
                  gameprofilerfiller.enter("tick");
                  if (!entity.dead && !(entity instanceof EntityComplexPart)) {
@@ -173,7 +192,7 @@ index 509e60279be76374e2f32faecb881b05f3f23b43..a6c7ed128479bbbd8aed35b3f730d13d
                  }
  
                  gameprofilerfiller.exit();
-@@ -1232,9 +1253,14 @@ public class WorldServer extends World implements GeneratorAccessSeed {
+@@ -1330,9 +1351,14 @@ public class WorldServer extends World implements GeneratorAccessSeed {
                  ++entity.ticksLived;
                  GameProfilerFiller gameprofilerfiller = this.getMethodProfiler();
  
