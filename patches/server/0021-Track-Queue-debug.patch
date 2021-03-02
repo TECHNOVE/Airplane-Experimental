@@ -5,19 +5,21 @@ Subject: [PATCH] Track Queue debug
 
 
 diff --git a/src/main/java/gg/airplane/structs/TrackQueue.java b/src/main/java/gg/airplane/structs/TrackQueue.java
-index f1d68088a9378a8a61b398dbbc5b7796dba3d518..f057054e8b55c6525d76fc82b940986509572539 100644
+index f1d68088a9378a8a61b398dbbc5b7796dba3d518..8e384087f74e8cf506a0251358ddeb750e934089 100644
 --- a/src/main/java/gg/airplane/structs/TrackQueue.java
 +++ b/src/main/java/gg/airplane/structs/TrackQueue.java
-@@ -4,6 +4,8 @@ import com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet;
+@@ -3,7 +3,10 @@ package gg.airplane.structs;
+ import com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet;
  import net.minecraft.server.Chunk;
  import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.WorldServer;
  import org.apache.logging.log4j.Level;
 +import org.bukkit.command.Command;
 +import org.bukkit.command.CommandSender;
  
  import java.util.concurrent.ConcurrentLinkedQueue;
  import java.util.concurrent.ForkJoinPool;
-@@ -14,6 +16,28 @@ import java.util.concurrent.atomic.AtomicInteger;
+@@ -14,6 +17,32 @@ import java.util.concurrent.atomic.AtomicInteger;
   */
  public class TrackQueue {
  
@@ -37,8 +39,12 @@ index f1d68088a9378a8a61b398dbbc5b7796dba3d518..f057054e8b55c6525d76fc82b9409865
 +            if (!sender.isOp()) {
 +                return false;
 +            }
-+            debug = !debug;
-+            sender.sendMessage("Set debug to: " + debug);
++//            debug = !debug;
++//            sender.sendMessage("Set debug to: " + debug);
++            for (WorldServer world : MinecraftServer.getServer().getWorlds()) {
++                IteratorSafeOrderedReferenceSet<Chunk> chunks = world.getChunkProvider().entityTickingChunks;
++                sender.sendMessage(world.getWorld().getName() + ": " + chunks.size() + " / " + chunks.getListSize());
++            }
 +            return true;
 +        }
 +    }
@@ -46,7 +52,7 @@ index f1d68088a9378a8a61b398dbbc5b7796dba3d518..f057054e8b55c6525d76fc82b9409865
      private final IteratorSafeOrderedReferenceSet<Chunk> chunks;
      private final ForkJoinPool pool = ForkJoinPool.commonPool();
      private final AtomicInteger taskIndex = new AtomicInteger();
-@@ -36,10 +60,23 @@ public class TrackQueue {
+@@ -36,10 +65,23 @@ public class TrackQueue {
              this.pool.execute(this::run);
          }
  
@@ -73,7 +79,7 @@ index f1d68088a9378a8a61b398dbbc5b7796dba3d518..f057054e8b55c6525d76fc82b9409865
          this.runMainThreadTasks(); // finish tasks
      }
  
-@@ -77,4 +114,24 @@ public class TrackQueue {
+@@ -77,4 +119,24 @@ public class TrackQueue {
          return false;
      }
  
@@ -98,6 +104,19 @@ index f1d68088a9378a8a61b398dbbc5b7796dba3d518..f057054e8b55c6525d76fc82b9409865
 +    }
 +
  }
+diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+index e8a6bc2654e840395fee70d79695c5a395a4fc1b..cd60ea99d88d6a10524be02adc8acba4071f2df6 100644
+--- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+@@ -363,7 +363,7 @@ public class ChunkProviderServer extends IChunkProvider {
+     }
+ 
+     final com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<Chunk> tickingChunks = new com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<>(4096, 0.75f, 4096, 0.15, true);
+-    final com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<Chunk> entityTickingChunks = new com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<>(4096, 0.75f, 4096, 0.15, true);
++    public final com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<Chunk> entityTickingChunks = new com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet<>(4096, 0.75f, 4096, 0.15, true);
+     // Tuinity end
+ 
+     public ChunkProviderServer(WorldServer worldserver, Convertable.ConversionSession convertable_conversionsession, DataFixer datafixer, DefinedStructureManager definedstructuremanager, Executor executor, ChunkGenerator chunkgenerator, int i, boolean flag, WorldLoadListener worldloadlistener, Supplier<WorldPersistentData> supplier) {
 diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
 index 6000be9ba615fbc345dfd24d2974e7b632b6b53b..87a5f7f850a10fb8ef2b1747b26ac8f6d0bdf423 100644
 --- a/src/main/java/net/minecraft/server/DedicatedServer.java
