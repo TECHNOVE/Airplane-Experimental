@@ -262,23 +262,22 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
  
          // CraftBukkit start - Fix for nonsensical head yaw
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb454c06fad9 100644
+index 121deda90227cb0416d6642607b24093df2baa80..728aa6e10480ed25300331975996934173eea5a4 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -727,6 +727,12 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -727,6 +727,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          return (PlayerChunk) (this.hasPendingVisibleUpdate ? this.pendingVisibleChunks.get(i) : ((ProtectedVisibleChunksMap)this.visibleChunks).safeGet(i));
          // Paper end
      }
 +    // Airplane start - since neither map can be updated during tracker tick, it's safe to allow direct retrieval here
 +    private PlayerChunk trackerGetVisibleChunk(long i) {
-+        //return this.hasPendingVisibleUpdate ? this.pendingVisibleChunks.get(i) : ((ProtectedVisibleChunksMap) this.visibleChunks).safeGet(i);
-+        return ((ProtectedVisibleChunksMap) this.visibleChunks).safeGet(i);
++        return this.hasPendingVisibleUpdate ? this.pendingVisibleChunks.get(i) : ((ProtectedVisibleChunksMap) this.visibleChunks).safeGet(i);
 +    }
 +    // Airplane end
  
      protected final IntSupplier getPrioritySupplier(long i) { return c(i); } // Paper - OBFHELPER
      protected IntSupplier c(long i) {
-@@ -2126,10 +2132,30 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -2126,10 +2131,30 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          entity.tracker = null; // Paper - We're no longer tracked
      }
  
@@ -309,7 +308,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb45
              com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet.Iterator<Chunk> iterator = this.world.getChunkProvider().entityTickingChunks.iterator();
              try {
              while (iterator.hasNext()) {
-@@ -2391,7 +2417,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2391,7 +2416,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
      public class EntityTracker {
  
          final EntityTrackerEntry trackerEntry; // Paper - private -> package private
@@ -318,7 +317,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb45
          private final int trackingDistance;
          private SectionPosition e;
          // Paper start
-@@ -2410,7 +2436,9 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2410,7 +2435,9 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
          // Paper start - use distance map to optimise tracker
          com.destroystokyo.paper.util.misc.PooledLinkedHashSets.PooledObjectLinkedOpenHashSet<EntityPlayer> lastTrackerCandidates;
  
@@ -329,7 +328,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb45
              com.destroystokyo.paper.util.misc.PooledLinkedHashSets.PooledObjectLinkedOpenHashSet<EntityPlayer> oldTrackerCandidates = this.lastTrackerCandidates;
              this.lastTrackerCandidates = newTrackerCandidates;
  
-@@ -2451,7 +2479,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2451,7 +2478,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
              return this.tracker.getId();
          }
  
@@ -338,7 +337,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb45
              Iterator iterator = this.trackedPlayers.iterator();
  
              while (iterator.hasNext()) {
-@@ -2489,8 +2517,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2489,8 +2516,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
  
          }
  
@@ -349,7 +348,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..734da3017f45e1ee173af090f33bdb45
              if (entityplayer != this.tracker) {
                  // Paper start - remove allocation of Vec3D here
                  //Vec3D vec3d = entityplayer.getPositionVector().d(this.tracker.getPositionVector()); // MC-155077, SPIGOT-5113
-@@ -2511,7 +2539,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2511,7 +2538,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
                           */
                          int x = this.tracker.chunkX, z = this.tracker.chunkZ;
                          long chunkcoordintpair = ChunkCoordIntPair.pair(x, z);
