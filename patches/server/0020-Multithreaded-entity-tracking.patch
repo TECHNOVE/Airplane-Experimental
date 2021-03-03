@@ -58,10 +58,10 @@ index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..0495cd90cde288c31bdbb00b1bb64683
  }
 diff --git a/src/main/java/gg/airplane/structs/TrackQueue.java b/src/main/java/gg/airplane/structs/TrackQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..f1d68088a9378a8a61b398dbbc5b7796dba3d518
+index 0000000000000000000000000000000000000000..601694aa6d36ce230d84cc6b55231d2fc3af30e9
 --- /dev/null
 +++ b/src/main/java/gg/airplane/structs/TrackQueue.java
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,84 @@
 +package gg.airplane.structs;
 +
 +import com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet;
@@ -94,17 +94,21 @@ index 0000000000000000000000000000000000000000..f1d68088a9378a8a61b398dbbc5b7796
 +        if (iterator == -1) {
 +            return;
 +        }
-+        this.taskIndex.set(iterator);
++        try {
++            this.taskIndex.set(iterator);
 +
-+        for (int i = 0; i < this.pool.getParallelism(); i++) {
-+            this.pool.execute(this::run);
-+        }
++            for (int i = 0; i < this.pool.getParallelism(); i++) {
++                this.pool.execute(this::run);
++            }
 +
-+        while (this.taskIndex.get() < this.chunks.getListSize()) {
-+            this.runMainThreadTasks();
-+            this.handleTask(); // assist
++            while (this.taskIndex.get() < this.chunks.getListSize()) {
++                this.runMainThreadTasks();
++                this.handleTask(); // assist
++            }
++            this.runMainThreadTasks(); // finish tasks
++        } finally {
++            this.chunks.finishRawIterator();
 +        }
-+        this.runMainThreadTasks(); // finish tasks
 +    }
 +
 +    private void runMainThreadTasks() {
