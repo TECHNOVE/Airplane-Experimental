@@ -37,7 +37,7 @@ index be408aebbccbda46e8aa82ef337574137cfa0096..b9bdce7c7ca8b7b107b0dca165d72232
      protected final double maxFragFactor;
  
 diff --git a/src/main/java/gg/airplane/AirplaneConfig.java b/src/main/java/gg/airplane/AirplaneConfig.java
-index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..1bbfc5328403f5708e265d76a892e16b1f181f00 100644
+index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..fe97adecada7bba8a6ba15365ed1a04cb5b2c399 100644
 --- a/src/main/java/gg/airplane/AirplaneConfig.java
 +++ b/src/main/java/gg/airplane/AirplaneConfig.java
 @@ -68,4 +68,18 @@ public class AirplaneConfig {
@@ -49,11 +49,11 @@ index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..1bbfc5328403f5708e265d76a892e16b
 +    public static boolean entityTrackerAsyncPackets = false;
 +
 +    private static void entityTracker() {
-+        manual.setComment("entity-tracker", "Options to improve the performance of tracked entities");
++        manual.setComment("tracker", "Options to improve the performance of the entity tracker");
 +
-+        multithreadedEntityTracker = manual.get("entity-tracker.multithreaded", multithreadedEntityTracker,
++        multithreadedEntityTracker = manual.get("tracker.multithreaded", multithreadedEntityTracker,
 +          "This enables the multithreading of the tracker.");
-+        entityTrackerAsyncPackets = manual.get("entity-tracker.unsafe-async-packets", entityTrackerAsyncPackets,
++        entityTrackerAsyncPackets = manual.get("tracker.unsafe-async-packets", entityTrackerAsyncPackets,
 +          "This option can break plugins that assume packets from the",
 +          "entity tracker will be sent sync.");
 +    }
