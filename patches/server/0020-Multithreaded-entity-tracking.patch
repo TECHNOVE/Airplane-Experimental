@@ -37,22 +37,25 @@ index be408aebbccbda46e8aa82ef337574137cfa0096..b9bdce7c7ca8b7b107b0dca165d72232
      protected final double maxFragFactor;
  
 diff --git a/src/main/java/gg/airplane/AirplaneConfig.java b/src/main/java/gg/airplane/AirplaneConfig.java
-index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..0495cd90cde288c31bdbb00b1bb64683950c131f 100644
+index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..1bbfc5328403f5708e265d76a892e16b1f181f00 100644
 --- a/src/main/java/gg/airplane/AirplaneConfig.java
 +++ b/src/main/java/gg/airplane/AirplaneConfig.java
-@@ -68,4 +68,15 @@ public class AirplaneConfig {
+@@ -68,4 +68,18 @@ public class AirplaneConfig {
          dynamicHoglinBehavior = manual.get("behavior-activation.hoglin", dynamicHoglinBehavior);
      }
  
 +
-+    public static boolean multithreadedEntityTracker = false;
++    public static boolean multithreadedEntityTracker = true;
++    public static boolean entityTrackerAsyncPackets = false;
 +
 +    private static void entityTracker() {
 +        manual.setComment("entity-tracker", "Options to improve the performance of tracked entities");
 +
 +        multithreadedEntityTracker = manual.get("entity-tracker.multithreaded", multithreadedEntityTracker,
-+          "This can break plugins that listen to packets sent from",
-+            "the entity tracker. Ensure you have compatible plugins.");
++          "This enables the multithreading of the tracker.");
++        entityTrackerAsyncPackets = manual.get("entity-tracker.unsafe-async-packets", entityTrackerAsyncPackets,
++          "This option can break plugins that assume packets from the",
++          "entity tracker will be sent sync.");
 +    }
 +
  }
@@ -191,10 +194,21 @@ index 173a210392d71cdfc551f095dc0d9c9040d22d3f..d87f80fe7c7086d07057c11227807c88
      private final ServerStatisticManager serverStatisticManager;
      private float lastHealthScored = Float.MIN_VALUE;
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9ee8bb273 100644
+index 81869215876d10a84ab27c0e6f41963c1346fd1c..c5c12fa51261ed77f745170ffa837f7dd0bf76b1 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-@@ -74,7 +74,7 @@ public class EntityTrackerEntry {
+@@ -46,6 +46,10 @@ public class EntityTrackerEntry {
+      * Requested in https://github.com/PaperMC/Paper/issues/1537 to allow intercepting packets
+      */
+     public void sendPlayerPacket(EntityPlayer player, Packet packet) {
++        if (!gg.airplane.AirplaneConfig.entityTrackerAsyncPackets && !org.bukkit.Bukkit.isPrimaryThread()) {
++            this.b.chunkProvider.playerChunkMap.trackerEnsureMain(() -> sendPlayerPacket(player, packet));
++            return;
++        }
+         player.playerConnection.sendPacket(packet);
+     }
+ 
+@@ -74,7 +78,7 @@ public class EntityTrackerEntry {
  
      public final void tick() { this.a(); } // Paper - OBFHELPER
      public void a() {
@@ -203,7 +217,7 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
          List<Entity> list = this.tracker.getPassengers();
  
          if (!list.equals(this.p)) {
-@@ -88,6 +88,8 @@ public class EntityTrackerEntry {
+@@ -88,6 +92,8 @@ public class EntityTrackerEntry {
              ItemStack itemstack = entityitemframe.getItem();
  
              if (this.tickCounter % 10 == 0 && itemstack.getItem() instanceof ItemWorldMap) { // CraftBukkit - Moved this.tickCounter % 10 logic here so item frames do not enter the other blocks
@@ -212,7 +226,7 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
                  WorldMap worldmap = ItemWorldMap.getSavedMap(itemstack, this.b);
                  Iterator iterator = this.trackedPlayers.iterator(); // CraftBukkit
  
-@@ -101,6 +103,8 @@ public class EntityTrackerEntry {
+@@ -101,6 +107,8 @@ public class EntityTrackerEntry {
                          entityplayer.playerConnection.sendPacket(packet);
                      }
                  }
@@ -221,7 +235,7 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
              }
  
              this.c();
-@@ -235,18 +239,25 @@ public class EntityTrackerEntry {
+@@ -235,18 +243,25 @@ public class EntityTrackerEntry {
              // CraftBukkit start - Create PlayerVelocity event
              boolean cancelled = false;
  
@@ -251,7 +265,7 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
              }
  
              if (!cancelled) {
-@@ -330,7 +341,9 @@ public class EntityTrackerEntry {
+@@ -330,7 +345,9 @@ public class EntityTrackerEntry {
              if (!list.isEmpty()) {
                  consumer.accept(new PacketPlayOutEntityEquipment(this.tracker.getId(), list));
              }
@@ -261,8 +275,19 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..339bce1ab75283b3ed8d5b012788dab9
          }
  
          // CraftBukkit start - Fix for nonsensical head yaw
+@@ -408,6 +425,10 @@ public class EntityTrackerEntry {
+     // Paper end
+ 
+     private void broadcastIncludingSelf(Packet<?> packet) {
++        if (!gg.airplane.AirplaneConfig.entityTrackerAsyncPackets && !org.bukkit.Bukkit.isPrimaryThread()) {
++            this.b.chunkProvider.playerChunkMap.trackerEnsureMain(() -> broadcastIncludingSelf(packet));
++            return;
++        }
+         this.f.accept(packet);
+         if (this.tracker instanceof EntityPlayer) {
+             ((EntityPlayer) this.tracker).playerConnection.sendPacket(packet);
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 121deda90227cb0416d6642607b24093df2baa80..1e4a9d3803ca27d1e8a204fa7f5b64b40ef472f9 100644
+index 121deda90227cb0416d6642607b24093df2baa80..70d54e554385a614dc117f0231fe0e3546d4221e 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -727,6 +727,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
@@ -328,16 +353,35 @@ index 121deda90227cb0416d6642607b24093df2baa80..1e4a9d3803ca27d1e8a204fa7f5b64b4
              com.destroystokyo.paper.util.misc.PooledLinkedHashSets.PooledObjectLinkedOpenHashSet<EntityPlayer> oldTrackerCandidates = this.lastTrackerCandidates;
              this.lastTrackerCandidates = newTrackerCandidates;
  
-@@ -2451,7 +2478,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2451,7 +2478,13 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
              return this.tracker.getId();
          }
  
 -        public void broadcast(Packet<?> packet) {
-+        public synchronized void broadcast(Packet<?> packet) { // Airplane - syncronized for tracked player
++        public synchronized void broadcast(Packet<?> packet) { // Airplane - synchronized for tracked player
++            // Airplane start
++            if (!gg.airplane.AirplaneConfig.entityTrackerAsyncPackets && !org.bukkit.Bukkit.isPrimaryThread()) {
++                trackerEnsureMain(() -> broadcast(packet));
++                return;
++            }
++            // Airplane end
              Iterator iterator = this.trackedPlayers.iterator();
  
              while (iterator.hasNext()) {
-@@ -2489,8 +2516,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2463,6 +2496,12 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+         }
+ 
+         public void broadcastIncludingSelf(Packet<?> packet) {
++            // Airplane start
++            if (!gg.airplane.AirplaneConfig.entityTrackerAsyncPackets && !org.bukkit.Bukkit.isPrimaryThread()) {
++                trackerEnsureMain(() -> broadcastIncludingSelf(packet));
++                return;
++            }
++            // Airplane end
+             this.broadcast(packet);
+             if (this.tracker instanceof EntityPlayer) {
+                 ((EntityPlayer) this.tracker).playerConnection.sendPacket(packet);
+@@ -2489,8 +2528,8 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
  
          }
  
@@ -348,7 +392,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..1e4a9d3803ca27d1e8a204fa7f5b64b4
              if (entityplayer != this.tracker) {
                  // Paper start - remove allocation of Vec3D here
                  //Vec3D vec3d = entityplayer.getPositionVector().d(this.tracker.getPositionVector()); // MC-155077, SPIGOT-5113
-@@ -2511,7 +2538,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2511,7 +2550,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
                           */
                          int x = this.tracker.chunkX, z = this.tracker.chunkZ;
                          long chunkcoordintpair = ChunkCoordIntPair.pair(x, z);
