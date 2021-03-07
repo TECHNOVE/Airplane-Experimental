@@ -287,7 +287,7 @@ index 81869215876d10a84ab27c0e6f41963c1346fd1c..c5c12fa51261ed77f745170ffa837f7d
          if (this.tracker instanceof EntityPlayer) {
              ((EntityPlayer) this.tracker).playerConnection.sendPacket(packet);
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 121deda90227cb0416d6642607b24093df2baa80..70d54e554385a614dc117f0231fe0e3546d4221e 100644
+index 121deda90227cb0416d6642607b24093df2baa80..a0e3faf16739ade34183e3759a2bcf845a7d0e16 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -727,6 +727,11 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
@@ -325,7 +325,7 @@ index 121deda90227cb0416d6642607b24093df2baa80..70d54e554385a614dc117f0231fe0e35
          try {
 +            // Airplane start - multithreaded tracker
 +            if (this.trackQueue == null) this.trackQueue = new gg.airplane.structs.TrackQueue(this.world.getChunkProvider().entityTickingChunks, trackerMainQueue);
-+            if (gg.airplane.AirplaneConfig.multithreadedEntityTracker && this.world.getChunkProvider().entityTickingChunks.size() > 250) {
++            if (gg.airplane.AirplaneConfig.multithreadedEntityTracker) {
 +                this.trackQueue.start();
 +                return;
 +            }
