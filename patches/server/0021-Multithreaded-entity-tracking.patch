@@ -37,11 +37,11 @@ index be408aebbccbda46e8aa82ef337574137cfa0096..b9bdce7c7ca8b7b107b0dca165d72232
      protected final double maxFragFactor;
  
 diff --git a/src/main/java/gg/airplane/AirplaneConfig.java b/src/main/java/gg/airplane/AirplaneConfig.java
-index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..fe97adecada7bba8a6ba15365ed1a04cb5b2c399 100644
+index 3a5a65a2f282b00602643470520fd05fba5907fb..e183b6cae23935823fa9e0f767e499a8102b0ad1 100644
 --- a/src/main/java/gg/airplane/AirplaneConfig.java
 +++ b/src/main/java/gg/airplane/AirplaneConfig.java
-@@ -68,4 +68,18 @@ public class AirplaneConfig {
-         dynamicHoglinBehavior = manual.get("behavior-activation.hoglin", dynamicHoglinBehavior);
+@@ -87,4 +87,18 @@ public class AirplaneConfig {
+         // todo lookup token (off-thread) and let users know if their token is valid
      }
  
 +
